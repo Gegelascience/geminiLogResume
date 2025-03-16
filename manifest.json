@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Gemini Log Error Analyst",
+    "version": "1.0",
+    "description": "A Chrome extension to analyze log errors.",
+
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_title": "Log Error Analyst"
+    },
+    "icons": {
+        "16": "images/get_started16.png",
+        "48": "images/get_started48.png",
+        "128": "images/get_started128.png"
+    }
+}
