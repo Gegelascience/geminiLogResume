@@ -29,7 +29,10 @@ btn.addEventListener("click", () => {
         var errorLines =lines.filter(l => {
             return l.includes(keyword)
         })
-
+        if (errorLines.length === 0) {
+            document.getElementById("analyse").innerText = "Aucune ligne trouvée avec ces mots clés";
+            return;
+        }
         const payload = {
             "contents": [{
             "parts":[{"text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` }]
