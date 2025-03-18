@@ -3,7 +3,7 @@
 const btn = document.getElementById("resumeLog")
 const spinner = document.getElementById("spinner")
 const inputFile = document.getElementById("logFile")
-
+const keywordSearch = document.getElementById("keywordSearch")
 
 btn.addEventListener("click", () => {
 
@@ -20,8 +20,14 @@ btn.addEventListener("click", () => {
 
         const lines = logsText.split("\n");
 
+        let keyword = "ERROR";
+
+        if (keywordSearch.value && keywordSearch.value !== null && keywordSearch.value.length > 0) {
+            console.log("keywordSearch", keywordSearch.value)
+            keyword = keywordSearch.value;
+        }
         var errorLines =lines.filter(l => {
-            return l.includes("ERROR")
+            return l.includes(keyword)
         })
 
         const payload = {
@@ -50,6 +56,10 @@ btn.addEventListener("click", () => {
             document.getElementById("analyse").innerText = analyse;
             spinner.hidden = true;
 
+        }).catch((error) => {
+            console.error('Error:', error);
+            alert("Erreur lors de l'analyse du log");
+            spinner.hidden = true;
         });
     }
   });
