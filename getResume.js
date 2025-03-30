@@ -5,6 +5,13 @@ const spinner = document.getElementById("spinner")
 const inputFile = document.getElementById("logFile")
 const keywordSearch = document.getElementById("keywordSearch")
 
+function cleanGeminiHtml(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const div = doc.querySelector('.geminiAnswer');
+    return div ? div.innerHTML : html;
+}
+
 btn.addEventListener("click", () => {
 
   chrome.storage.local.get(["my_gemini_log_key"]).then((result) => {
@@ -34,9 +41,24 @@ btn.addEventListener("click", () => {
             return;
         }
         const payload = {
-            "contents": [{
-            "parts":[{"text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` }]
-            }]
+            "system_instruction":{
+                "parts":[
+                    {
+                        "text": "You are an expert on log analysis.\
+                        You will answer on french.\
+                        Aswer must be on html format and will be part of a 'div' tag with css class 'geminiAnswer'."
+                    }
+                ]
+            },
+            "contents": [
+                {
+                    "parts":[
+                        {
+                            "text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` 
+                        }
+                    ]
+                }
+            ]
         };
     
         const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?" + new URLSearchParams({
@@ -53,10 +75,10 @@ btn.addEventListener("click", () => {
             body: JSON.stringify(payload),
         }).then(response => response.json())
         .then(data => {
-            // console.log(data);
             const analyse = data.candidates[0].content.parts[0].text;
+            console.log(analyse);
 
-            document.getElementById("analyse").innerText = analyse;
+            document.getElementById("analyse").innerHTML = cleanGeminiHtml(analyse);
             spinner.hidden = true;
 
         }).catch((error) => {
