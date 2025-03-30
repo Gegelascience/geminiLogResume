@@ -2,8 +2,22 @@
 
 const btn = document.getElementById("resumeLog")
 const spinner = document.getElementById("spinner")
-const inputFile = document.getElementById("logFile")
-const keywordSearch = document.getElementById("keywordSearch")
+const formTagElements = document.getElementById("formAnalysis").elements;
+
+for (let index = 0; index < formTagElements["mode"].length; index++) {
+    const radioBtn = formTagElements["mode"][index];
+    radioBtn.addEventListener("change", () => {
+        console.log(formTagElements["mode"].value)
+        if (document.getElementsByName("keywordSearch").length > 0) {
+            const inputKeyword = document.getElementsByName("keywordSearch")[0];
+            if (formTagElements["mode"].value === "custom") {
+                inputKeyword.hidden = false;
+            } else {
+                inputKeyword.hidden = true;
+            }
+        }
+    })
+}
 
 function cleanGeminiHtml(html) {
     const parser = new DOMParser();
@@ -13,8 +27,13 @@ function cleanGeminiHtml(html) {
 }
 
 function getKeyword() {
-    const keyword = document.getElementById("keywordSearch").value;
-    return keyword ? keyword : "ERROR";
+    if (document.getElementsByName("keywordSearch").length > 0) {
+        const keyword = document.getElementsByName("keywordSearch")[0].value;
+        console.log("keyword", keyword)
+        return formTagElements["mode"].value ==="custom" && keyword ? keyword : "ERROR";
+    }
+    return "ERROR";
+    
 }
 
 function getSystemPrompt(mode) {
@@ -25,7 +44,10 @@ function getSystemPrompt(mode) {
     } else if (mode === "table") {
         return "You are an expert on log analysis.\
             You will answer on french.\
-            Return a html table with the number of errors by type. table tag will have the css class 'table' and 'geminiAnswer'."
+            You will answer in html format on a div tag. div tag will have the css class 'geminiAnswer'.\
+            The div contains only a table tag. \
+            The table inside the div tag contains the number of errors by type. table tag will have css class 'table table-hover table-secondary'\
+            There is no text outside the table."
     } else {
         return "You are an expert on log analysis.\
             You will answer on french."
@@ -40,11 +62,11 @@ btn.addEventListener("click", () => {
     const GOOGLE_API_KEY = result.my_gemini_log_key;
 
     const fReader = new FileReader();
-    fReader.readAsText(inputFile.files[0]);
+    console.log(document.getElementsByName("logFile"))
+    fReader.readAsText(document.getElementsByName("logFile")[0].files[0]);
     fReader.onloadend = function(event){
     
         const logsText = event.target.result;
-        //console.log("val",logsLines)
 
         const lines = logsText.split("\n");
         const keyword = getKeyword();
@@ -53,10 +75,15 @@ btn.addEventListener("click", () => {
             return l.includes(keyword)
         })
         if (errorLines.length === 0) {
-            document.getElementById("analyse").innerText = "Aucune ligne de log trouvée avec ces mots clés";
+            document.getElementById("analyse").innerHTML = "<p>Aucune ligne de log trouvée avec ces mots clés<p>";
             return;
         }
-        const systemInstruction = getSystemPrompt("synthesis");
+
+        console.log("errorLines", errorLines)
+        console.log("errorLines", errorLines[0])
+        console.log("errorLines", errorLines[1])
+
+        const systemInstruction = getSystemPrompt(formTagElements["mode"].value);
 
         const payload = {
             "system_instruction":{
@@ -66,17 +93,17 @@ btn.addEventListener("click", () => {
                     }
                 ]
             },
-            "contents": [
-                {
-                    "parts":[
-                        {
-                            "text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` 
-                        }
-                    ]
-                }
-            ]
+            "contents": {
+                "parts":[
+                    {
+                        "text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` 
+                    }
+                ]
+            }
         };
-    
+        
+
+ 
         const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?" + new URLSearchParams({
             key: GOOGLE_API_KEY
         }).toString();
@@ -86,10 +113,15 @@ btn.addEventListener("click", () => {
         fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=UTF-8',
             },
             body: JSON.stringify(payload),
-        }).then(response => response.json())
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json()
+        })
         .then(data => {
             const analyse = data.candidates[0].content.parts[0].text;
             console.log(analyse);
@@ -98,7 +130,7 @@ btn.addEventListener("click", () => {
             spinner.hidden = true;
 
         }).catch((error) => {
-            console.error('Error:', error);
+            console.error('Error:', error.message);
             alert("Erreur lors de l'analyse du log");
             spinner.hidden = true;
         });
