@@ -12,6 +12,27 @@ function cleanGeminiHtml(html) {
     return div ? div.innerHTML : html;
 }
 
+function getKeyword() {
+    const keyword = document.getElementById("keywordSearch").value;
+    return keyword ? keyword : "ERROR";
+}
+
+function getSystemPrompt(mode) {
+    if (mode === "synthesis") {
+        return "You are an expert on log analysis.\
+            You will answer on french.\
+            Aswer must be on html format and will be part of a 'div' tag with css class 'geminiAnswer'."
+    } else if (mode === "table") {
+        return "You are an expert on log analysis.\
+            You will answer on french.\
+            Return a html table with the number of errors by type. table tag will have the css class 'table' and 'geminiAnswer'."
+    } else {
+        return "You are an expert on log analysis.\
+            You will answer on french."
+    }
+               
+}
+
 btn.addEventListener("click", () => {
 
   chrome.storage.local.get(["my_gemini_log_key"]).then((result) => {
@@ -26,27 +47,22 @@ btn.addEventListener("click", () => {
         //console.log("val",logsLines)
 
         const lines = logsText.split("\n");
+        const keyword = getKeyword();
 
-        let keyword = "ERROR";
-
-        if (keywordSearch.value && keywordSearch.value !== null && keywordSearch.value.length > 0) {
-            console.log("keywordSearch", keywordSearch.value)
-            keyword = keywordSearch.value;
-        }
         var errorLines =lines.filter(l => {
             return l.includes(keyword)
         })
         if (errorLines.length === 0) {
-            document.getElementById("analyse").innerText = "Aucune ligne trouvée avec ces mots clés";
+            document.getElementById("analyse").innerText = "Aucune ligne de log trouvée avec ces mots clés";
             return;
         }
+        const systemInstruction = getSystemPrompt("synthesis");
+
         const payload = {
             "system_instruction":{
                 "parts":[
                     {
-                        "text": "You are an expert on log analysis.\
-                        You will answer on french.\
-                        Aswer must be on html format and will be part of a 'div' tag with css class 'geminiAnswer'."
+                        "text": systemInstruction
                     }
                 ]
             },
