@@ -55,6 +55,20 @@ function getSystemPrompt(mode) {
                
 }
 
+function parseLogLine(line) {
+    const regexDef = /^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3})\s+([A-Z]+)\s+(.*)$/;
+    const match = line.match(regexDef);
+    if (match) {
+        return {
+            date: match[1],
+            level: match[2],
+            message: match[3]
+        };
+    } else {
+        return null;
+    }
+}
+
 btn.addEventListener("click", () => {
 
   chrome.storage.local.get(["my_gemini_log_key"]).then((result) => {
@@ -69,9 +83,21 @@ btn.addEventListener("click", () => {
         const logsText = event.target.result;
 
         const lines = logsText.split("\n");
+        
+        let formattedLines = [];
+        for (let index = 0; index < lines.length; index++) {
+            const matchLine = parseLogLine(lines[index]);
+
+            if (matchLine) {
+                formattedLines.push(`${matchLine.date} ${matchLine.level} ${matchLine.message}`);
+            } else {
+                formattedLines[formattedLines.length - 1] = formattedLines[formattedLines.length - 1] + "\n" + lines[index];
+            }
+        }
+
         const keyword = getKeyword();
 
-        var errorLines =lines.filter(l => {
+        var errorLines =formattedLines.filter(l => {
             return l.includes(keyword)
         })
         if (errorLines.length === 0) {
@@ -79,9 +105,9 @@ btn.addEventListener("click", () => {
             return;
         }
 
-        console.log("errorLines", errorLines)
-        console.log("errorLines", errorLines[0])
-        console.log("errorLines", errorLines[1])
+        //console.log("errorLines", errorLines)
+        //console.log("errorLines", errorLines[0])
+        //console.log("errorLines", errorLines[1])
 
         const systemInstruction = getSystemPrompt(formTagElements["mode"].value);
 
