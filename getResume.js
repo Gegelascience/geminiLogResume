@@ -1,4 +1,5 @@
-import {getSystemPrompt, parseLogLine, getKeyword, cleanGeminiHtml} from "./lib/utils.js"; 
+import {parseLogLine, getKeyword} from "./lib/utils.js";
+import {analyseLogGemini} from "./lib/geminiAnalyse.js";
 
 const btn = document.getElementById("resumeLog")
 const spinner = document.getElementById("spinner")
@@ -96,58 +97,17 @@ btn.addEventListener("click", () => {
                 document.getElementById("analyse").innerHTML = "<p>Aucune ligne de log trouvée avec ces mots clés<p>";
                 return;
             }
-
-
-            const systemInstruction = getSystemPrompt(formTagElements["mode"].value);
-
-            const payload = {
-                "system_instruction":{
-                    "parts":[
-                        {
-                            "text": systemInstruction
-                        }
-                    ]
-                },
-                "contents": {
-                    "parts":[
-                        {
-                            "text": `fais une synthèse des lignes de logs suivantes: ${errorLines}` 
-                        }
-                    ]
-                }
-            };
-            
-
-    
-            const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?" + new URLSearchParams({
-                key: GOOGLE_API_KEY
-            }).toString();
-        
             spinner.hidden = false;
 
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=UTF-8',
-                },
-                body: JSON.stringify(payload),
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json()
-            })
-            .then(data => {
-                const analyse = data.candidates[0].content.parts[0].text;
-
-                document.getElementById("analyse").innerHTML = cleanGeminiHtml(analyse,'.geminiAnswer');
-                spinner.hidden = true;
+            analyseLogGemini(formTagElements["mode"].value, errorLines, GOOGLE_API_KEY).then((analyse) => {
+                document.getElementById("analyse").innerHTML = analyse;
 
             }).catch((error) => {
                 console.error('Error:', error.message);
                 alert("Erreur lors de l'analyse du log");
+            }).finally(() => {
                 spinner.hidden = true;
-            });
+            })
         }
     });
 });
