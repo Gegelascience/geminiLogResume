@@ -1,5 +1,5 @@
 import {parseLogLine, getKeyword} from "./lib/utils.js";
-import {analyseLogGemini} from "./lib/geminiAnalyse.js";
+import {GeminiLogAnalyseClient} from "./lib/geminiAnalyse.js";
 
 const btn = document.getElementById("resumeLog")
 const spinner = document.getElementById("spinner")
@@ -62,6 +62,8 @@ btn.addEventListener("click", () => {
 
         const GOOGLE_API_KEY = result.my_gemini_log_key;
 
+        const geminiClient = new GeminiLogAnalyseClient(GOOGLE_API_KEY);
+
         const fReader = new FileReader();
         console.log(document.getElementsByName("logFile"))
         fReader.readAsText(document.getElementsByName("logFile")[0].files[0]);
@@ -99,7 +101,8 @@ btn.addEventListener("click", () => {
             }
             spinner.hidden = false;
 
-            analyseLogGemini(formTagElements["mode"].value, errorLines, GOOGLE_API_KEY).then((analyse) => {
+            geminiClient.analyseLogGemini(formTagElements["mode"].value, errorLines, GOOGLE_API_KEY).then((analyse) => {
+                console.log("Analyse", analyse);
                 document.getElementById("analyse").innerHTML = analyse;
 
             }).catch((error) => {
